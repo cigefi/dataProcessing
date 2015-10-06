@@ -23,24 +23,43 @@ function [out] = dataProcessing(dirName,var2Read,yearZero,yearN)
         path = path.concat('/');
     end
     
-    out = {}
+    out = 0;
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
-            yearC = str2num(fileT.substring(fileT.length-7,fileT.lastIndexOf('.')));
-            if(yearZero>0)
-                if(yearC<yearZero) 
-                    continue;
-                 end
-            end
-            if(yearN>0)
-                if(yearC>yearN)
-                    continue;
+            try
+                yearC = str2num(fileT.substring(fileT.length-7,fileT.lastIndexOf('.')));
+                if(yearZero>0)
+                    if(yearC<yearZero) 
+                        continue;
+                     end
                 end
+                if(yearN>0)
+                    if(yearC>yearN)
+                        continue;
+                    end
+                end
+                if(yearC > 0)
+                    if(out==0)
+                        out = nc_varget(char(fileT),var2Read);
+                    else
+                        nData = nc_varget(char(fileT),var2Read);
+                        for m=1:1:length(nData(:,1,1))
+                            for n=1:1:length(nData(1,:,1))
+                                for k=1:1:length(nData(1,1,:))
+                                    try
+                                        out(m,n,k) = out(m,n,k)+nData(m,n,k); 
+                                    catch
+                                        out(m,n,k) = nData(m,n,k); % In case that nData is larger than out
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            catch
+                continue;
             end
-            %disp(yearC);
-            %disp(fileT); % Netcdf files
-            out(end +1) = nc_varget(char(fileT),var2Read);
         end
     end
 end

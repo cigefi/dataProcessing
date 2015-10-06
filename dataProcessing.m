@@ -23,6 +23,7 @@ function [out] = dataProcessing(dirName,var2Read,yearZero,yearN)
         path = path.concat('/');
     end
     
+    out = {}
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
@@ -37,9 +38,9 @@ function [out] = dataProcessing(dirName,var2Read,yearZero,yearN)
                     continue;
                 end
             end
-            nc_varget(fileT,var2Read);
-            disp(yearC);
-            disp(fileT); % Netcdf files
+            %disp(yearC);
+            %disp(fileT); % Netcdf files
+            out(end +1) = nc_varget(char(fileT),var2Read);
         end
     end
 end

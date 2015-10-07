@@ -1,4 +1,13 @@
-function [out] = dataProcessing(dirName,var2Read,yearZero,yearN)
+% Function dataProcessing
+%
+% Prototype: dataProcessing(dirName,var2Read,yearZero,yearN)
+%            dataProcessing(dirName,var2Read)
+%
+% dirName = Path of the directory that contents the files 
+% var2Read = Variable to be read (use 'ncdump' to check variable names)
+% yearZero (Optional) = Lower year of the data to be read
+% yearN (Optional) = Higher year of the data to be read
+function [out,meanOut] = dataProcessing(dirName,var2Read,yearZero,yearN)
     if nargin < 1
         error('dataProcessing: dirName is a required input')
     end
@@ -44,21 +53,20 @@ function [out] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         out = nc_varget(char(fileT),var2Read);
                     else
                         nData = nc_varget(char(fileT),var2Read);
-                        for m=1:1:length(nData(:,1,1))
-                            for n=1:1:length(nData(1,:,1))
-                                for k=1:1:length(nData(1,1,:))
-                                    try
-                                        out(m,n,k) = out(m,n,k)+nData(m,n,k); 
-                                    catch
-                                        out(m,n,k) = nData(m,n,k); % In case that nData is larger than out
-                                    end
-                                end
-                            end
-                        end
+                        out = cat(1,out,nData);
                     end
                 end
             catch
                 continue;
+            end
+        end
+    end
+    
+    for m=1:1:length(out(:,1,1))
+        for n=1:1:length(out(1,:,1))
+            for k=1:1:length(out(1,1,:))
+                %meanOut(m,n,k)= mean(out(:,n,k));
+                meanOut(1,n,k) = mean(out(:,n,k)); %#ok<AGROW>
             end
         end
     end

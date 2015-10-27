@@ -84,7 +84,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                             nc_attput(newFile,nc_global,'experiment_id',nc_attget(char(fileT),nc_global,'experiment_id'));
                             nc_attput(newFile,nc_global,'frequency','monthly');
                             nc_attput(newFile,nc_global,'Year',num2str(yearC)); % nc_attput(FILE,VARIABLE,TITLE,CONTENT)
-                            nc_attput(newFile,nc_global,'reinterpreted_institution','Centro de Investigaciones Geofísicas - Universidad de Costa Rica');
+                            nc_attput(newFile,nc_global,'reinterpreted_institution','CIGEFI - Universidad de Costa Rica');
                             nc_attput(newFile,nc_global,'reinterpreted_date',char(datetime('today')));
                             nc_attput(newFile,nc_global,'reinterpreted_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
 
@@ -121,8 +121,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                     end
                 end
             catch
-                error('An error has occurred, please try again!');
-                % continue;
+                continue;
             end
         end
     end

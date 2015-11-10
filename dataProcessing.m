@@ -2,17 +2,20 @@
 %
 % Prototype: dataProcessing(dirName,var2Read,yearZero,yearN)
 %            dataProcessing(dirName,var2Read)
+%            dataProcessing(dirName)
 %
 % dirName = Path of the directory that contents the files 
-% var2Read = Variable to be read (use 'ncdump' to check variable names)
+% var2Read (Recommended)= Variable to be read (use 'ncdump' to check variable names)
 % yearZero (Optional) = Lower year of the data to be read
 % yearN (Optional) = Higher year of the data to be read
 function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     if nargin < 1
         error('dataProcessing: dirName is a required input')
     end
-    if nargin < 2
-        error('dataProcessing: var2Read is a required input')
+    if nargin < 2 % Validates if the var2Read param is received
+        temp = java.lang.String(dirName).split('/');n
+        temp = temp(end).split('_');
+        var2Read = char(temp(1)); % Default value is taken from the path
     end
     if nargin < 3 % Validates if the yearZero param is received
         yearZero = 0; % Default value
@@ -55,20 +58,34 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
             catch
                 continue;
             end
+        else
+            if isequal(dirData(f).isdir,1)
+                  newPath = char(path.concat(dirData(f).name));
+                if nargin < 2 % Validates if the var2Read param is received
+                    dataProcessing(newPath);
+                elseif nargin < 3 % Validates if the yearZero param is received
+                    dataProcessing(newPath,var2Read);
+                elseif nargin < 4 % Validates if the yearN param is received
+                    dataProcessing(newPath,var2Read,yearZero)
+                else
+                    dataProcessing(newPath,var2Read,yearZero,yearN)
+                end
+            end
         end
     end
 end
 
 function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName)
     % Catching data from original file
-    latDataSet = nc_varget(char(fileT),'lat');
+    latDataSet = nc_varget(char(fileT),'lat'); 
     lonDataSet = nc_varget(char(fileT),'lon');
     timeDataSet = nc_varget(char(fileT),var2Read);
     lPos = 0;
     newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
+    h = waitbar(0,'Initializing data writing ...');
     for m=1:1:length(months)
         fPos = lPos + 1;
-        if(leapyear(yearC)&& m ==2)
+        if(leapyear(yearC)&& m ==2 && length(timeDataSet(:,1,1))==366)
             lPos = months(m) + fPos; % Leap year
         else
             lPos = months(m) + fPos - 1;
@@ -124,10 +141,16 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName)
             for j=1:1:length(lonDataSet)
                 meanOut(m,i,j) = mean(timeDataSet(fPos:lPos,i,j)); %#ok<AGROW>
             end
+            if isequal(mod(i,50),1)
+                perc = 100*(i*length(lonDataSet)/(length(lonDataSet)*length(latDataSet)));%(length(latDataSet)-i+1)*length(lonDataSet);
+                waitbar(perc/100,h,strcat(monthsName(m),sprintf(' data written %d%% along...',round(perc))));
+                %waitbar(perc/100,h,sprintf('Data written %d%% along...',round(perc)));
+            end
         end
-        
         % Writing the data into file
         nc_varput(newFile,var2Read,meanOut);
+        waitbar(1,h,strcat(monthsName(m),' data saved.'));
         disp(strcat('Data saved:  ',monthsName(m),' - ',num2str(yearC),' - Days: ',num2str(fPos),' - ',num2str(lPos)));
     end
+    close(h);
 end

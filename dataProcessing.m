@@ -13,7 +13,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
         error('dataProcessing: dirName is a required input')
     end
     if nargin < 2 % Validates if the var2Read param is received
-        temp = java.lang.String(dirName).split('/');n
+        temp = java.lang.String(dirName).split('/');
         temp = temp(end).split('_');
         var2Read = char(temp(1)); % Default value is taken from the path
     end
@@ -95,8 +95,8 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName)
             nc_create_empty(newFile,'netcdf4-classic');
 
             % Adding file dimensions
-            nc_add_dimension(newFile,'latitude',length(latDataSet));
-            nc_add_dimension(newFile,'longitude',length(lonDataSet));
+            nc_add_dimension(newFile,'lat',length(latDataSet));
+            nc_add_dimension(newFile,'lon',length(lonDataSet));
             nc_add_dimension(newFile,'time',0); % 0 means UNLIMITED dimension
 
             % Global params
@@ -118,24 +118,24 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName)
             % Adding file variables
             monthlyData.Name = var2Read;
             monthlyData.Datatype = 'single';
-            monthlyData.Dimension = {'time','latitude', 'longitude'};
+            monthlyData.Dimension = {'time','lat', 'lon'};
             nc_addvar(newFile,monthlyData);
 
             timeData.Name = 'time';
             timeData.Dimension = {'time'};
             nc_addvar(newFile,timeData);
 
-            latData.Name = 'latitude';
-            latData.Dimension = {'latitude'};
+            latData.Name = 'lat';
+            latData.Dimension = {'lat'};
             nc_addvar(newFile,latData);
 
-            lonData.Name = 'longitude';
-            lonData.Dimension = {'longitude'};
+            lonData.Name = 'lon';
+            lonData.Dimension = {'lon'};
             nc_addvar(newFile,lonData);
 
             % Writing the data into file
-            nc_varput(newFile,'latitude',latDataSet);
-            nc_varput(newFile,'longitude',lonDataSet);
+            nc_varput(newFile,'lat',latDataSet);
+            nc_varput(newFile,'lon',lonDataSet);
         end
         for i=1:1:length(latDataSet)
             for j=1:1:length(lonDataSet)

@@ -4,7 +4,8 @@
 %            dataProcessing(dirName,var2Read)
 %            dataProcessing(dirName)
 %
-% dirName = Path of the directory that contents the files 
+% dirName = Path of the directory that contents the files and path for the
+% processing files
 % var2Read (Recommended)= Variable to be read (use 'ncdump' to check variable names)
 % yearZero (Optional) = Lower year of the data to be read
 % yearN (Optional) = Higher year of the data to be read
@@ -13,7 +14,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
         error('dataProcessing: dirName is a required input')
     end
     if nargin < 2 % Validates if the var2Read param is received
-        temp = java.lang.String(dirName).split('/');
+        temp = java.lang.String(dirName(1)).split('/');
         temp = temp(end).split('_');
         var2Read = char(temp(1)); % Default value is taken from the path
     end
@@ -29,12 +30,26 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
         yearZero = yearN;
         yearN = yearTemp;
     end
-    dirData = dir(dirName);  % Get the data for the current directory
+    dirData = dir(char(dirName(1)));  % Get the data for the current directory
     months = [31,28,31,30,31,30,31,31,30,31,30,31]; % Reference to the number of days per month
     monthsName = {'January','February','March','April','May','June','July','August','September','October','November','December'};
-    path = java.lang.String(dirName);
+    path = java.lang.String(dirName(1));
     if(path.charAt(path.length-1) ~= '/')
         path = path.concat('/');
+    end
+    if(length(dirName)>1)
+        save_path = java.lang.String(dirName(2));
+        if(save_path.charAt(save_path.length-1) ~= '/')
+            save_path = save_path.concat('/');
+        end
+        if(length(dirName)>2)
+            path_log = java.lang.String(dirName(3));
+        else
+            path_log = java.lang.String(dirName(2));
+        end
+        if(path_log.charAt(path_log.length-1) ~= '/')
+            path_log = path_log.concat('/');
+        end
     end
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
@@ -53,7 +68,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                 end
                 if(yearC > 0)
                     % Subrutine to writte the data in new Netcdf file
-                    writeFile(fileT,var2Read,yearC,months,path,monthsName);
+                    writeFile(fileT,var2Read,yearC,months,save_path,monthsName,path_log);
                 end
             catch
                 continue;
@@ -62,20 +77,20 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
             if isequal(dirData(f).isdir,1)
                   newPath = char(path.concat(dirData(f).name));
                 if nargin < 2 % Validates if the var2Read param is received
-                    dataProcessing(newPath);
+                    dataProcessing({[newPath],[char(save_path.concat(dirData(f).name))],[char(path_log)]});
                 elseif nargin < 3 % Validates if the yearZero param is received
-                    dataProcessing(newPath,var2Read);
+                    dataProcessing({[newPath],[char(save_path.concat(dirData(f).name))],[char(path_log)]},var2Read);
                 elseif nargin < 4 % Validates if the yearN param is received
-                    dataProcessing(newPath,var2Read,yearZero)
+                    dataProcessing({[newPath],[char(save_path.concat(dirData(f).name))],[char(path_log)]},var2Read,yearZero)
                 else
-                    dataProcessing(newPath,var2Read,yearZero,yearN)
+                    dataProcessing({[newPath],[char(save_path.concat(dirData(f).name))],[char(path_log)]},var2Read,yearZero,yearN)
                 end
             end
         end
     end
 end
 
-function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName)
+function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,path_log)
     % Catching data from original file
     latDataSet = nc_varget(char(fileT),'lat'); 
     lonDataSet = nc_varget(char(fileT),'lon');
@@ -91,6 +106,9 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName)
             lPos = months(m) + fPos - 1;
         end
         if(m==1) % New file configuration
+            if ~exist(char(path),'dir')
+                mkdir(char(path));
+            end
             newFile = char(path.concat(newName));
             nc_create_empty(newFile,'netcdf4-classic');
 
@@ -111,9 +129,9 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName)
             nc_attput(newFile,nc_global,'experiment_id',nc_attget(char(fileT),nc_global,'experiment_id'));
             nc_attput(newFile,nc_global,'frequency','monthly');
             nc_attput(newFile,nc_global,'Year',num2str(yearC)); % nc_attput(FILE,VARIABLE,TITLE,CONTENT)
-            nc_attput(newFile,nc_global,'reinterpreted_institution','CIGEFI - Universidad de Costa Rica');
-            nc_attput(newFile,nc_global,'reinterpreted_date',char(datetime('today')));
-            nc_attput(newFile,nc_global,'reinterpreted_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
+            nc_attput(newFile,nc_global,'data_analysis_institution','CIGEFI - Universidad de Costa Rica');
+            nc_attput(newFile,nc_global,'data_analysis_date',char(datetime('today')));
+            nc_attput(newFile,nc_global,'data_analysis_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
 
             % Adding file variables
             monthlyData.Name = var2Read;
@@ -152,5 +170,9 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName)
         waitbar(1,h,strcat(monthsName(m),' data saved.'));
         disp(strcat('Data saved:  ',monthsName(m),' - ',num2str(yearC),' - Days: ',num2str(fPos),' - ',num2str(lPos)));
     end
+    fid = fopen(strcat(char(path_log),'log.txt'), 'at');
+    fprintf(fid, '%s\n',char(fileT));
+    fclose(fid);
+    %disp(strcat('Archivo guardado: ',char(fileT)));
     close(h);
 end

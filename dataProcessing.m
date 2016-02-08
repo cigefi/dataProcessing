@@ -39,18 +39,21 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     end
     if(length(dirName)>1)
         save_path = java.lang.String(dirName(2));
-        if(save_path.charAt(save_path.length-1) ~= '/')
-            save_path = save_path.concat('/');
-        end
         if(length(dirName)>2)
             path_log = java.lang.String(dirName(3));
         else
             path_log = java.lang.String(dirName(2));
         end
-        if(path_log.charAt(path_log.length-1) ~= '/')
-            path_log = path_log.concat('/');
-        end
-    end
+	else
+		save_path = java.lang.String(dirName(1));
+		path_log = java.lang.String(dirName(1));
+	end
+	if(save_path.charAt(save_path.length-1) ~= '/')
+		save_path = save_path.concat('/');
+	end
+	if(path_log.charAt(path_log.length-1) ~= '/')
+		path_log = path_log.concat('/');
+	end
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))

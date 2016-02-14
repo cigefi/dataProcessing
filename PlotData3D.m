@@ -1,11 +1,11 @@
 function [] = PlotData3D(data3D)
     %hacer el promedio climatologico
-    for n=1:1:length(data3D(1,:,1))
-        for k=1:1:length(data3D(1,1,:))
-            data2D(n,k)=mean(data3D(:,n,k)); 
-        end
-    end
-
+%     for n=1:1:length(data3D(1,:,1))
+%         for k=1:1:length(data3D(1,1,:))
+%             data2D(n,k)=mean(data3D(:,n,k)); 
+%         end
+%     end
+    data2D = mean(data3D(:,:,:),3);
     %extender el mapa para rellenar el campo de long 360 con lon 0
     A=data2D(:,1);
     data2Dh=[data2D,A];

@@ -49,7 +49,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
 	else
 		save_path = java.lang.String(dirName(1));
 		path_log = java.lang.String(dirName(1));
-	end
+    end
 	if(save_path.charAt(save_path.length-1) ~= '/')
 		save_path = save_path.concat('/');
 	end
@@ -60,7 +60,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
             try
-                yearC = str2num(fileT.substring(fileT.length-7,fileT.lastIndexOf('.')));
+                yearC = str2double(fileT.substring(fileT.length-7,fileT.lastIndexOf('.')));
                 if(yearZero>0)
                     if(yearC<yearZero) 
                         continue;
@@ -82,13 +82,13 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
             if isequal(dirData(f).isdir,1)
                   newPath = char(path.concat(dirData(f).name));
                 if nargin < 2 % Validates if the var2Read param is received
-                    dataProcessing({[newPath],[char(save_path.concat(dirData(f).name))],[char(path_log)]});
+                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(path_log)});
                 elseif nargin < 3 % Validates if the yearZero param is received
-                    dataProcessing({[newPath],[char(save_path.concat(dirData(f).name))],[char(path_log)]},var2Read);
+                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(path_log)},var2Read);
                 elseif nargin < 4 % Validates if the yearN param is received
-                    dataProcessing({[newPath],[char(save_path.concat(dirData(f).name))],[char(path_log)]},var2Read,yearZero)
+                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(path_log)},var2Read,yearZero)
                 else
-                    dataProcessing({[newPath],[char(save_path.concat(dirData(f).name))],[char(path_log)]},var2Read,yearZero,yearN)
+                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(path_log)},var2Read,yearZero,yearN)
                 end
             end
         end

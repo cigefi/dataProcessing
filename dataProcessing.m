@@ -12,6 +12,8 @@
 function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     if nargin < 1
         error('dataProcessing: dirName is a required input')
+    else
+        dirName = strrep(dirName,'\','/'); % Clean dirName var
     end
     if nargin < 2 % Validates if the var2Read param is received
         temp = java.lang.String(dirName(1)).split('/');
@@ -97,10 +99,14 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,path_log)
     % Catching data from original file
     latDataSet = nc_varget(char(fileT),'lat'); 
     lonDataSet = nc_varget(char(fileT),'lon');
-    timeDataSet = nc_varget(char(fileT),var2Read);
+    try
+        timeDataSet = nc_varget(char(fileT),var2Read);
+    catch exception
+        disp(exception.message);
+    end
     lPos = 0;
     newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
-    h = waitbar(0,'Initializing data writing ...');
+    meanOut = [];
     for m=1:1:length(months)
         fPos = lPos + 1;
         if(leapyear(yearC)&& m ==2 && length(timeDataSet(:,1,1))==366)
@@ -158,24 +164,12 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,path_log)
             nc_varput(newFile,'lat',latDataSet);
             nc_varput(newFile,'lon',lonDataSet);
         end
-        for i=1:1:length(latDataSet)
-            for j=1:1:length(lonDataSet)
-                meanOut(m,i,j) = mean(timeDataSet(fPos:lPos,i,j)); %#ok<AGROW>
-            end
-            if isequal(mod(i,50),1)
-                perc = 100*(i*length(lonDataSet)/(length(lonDataSet)*length(latDataSet)));%(length(latDataSet)-i+1)*length(lonDataSet);
-                waitbar(perc/100,h,strcat(monthsName(m),sprintf(' data written %d%% along...',round(perc))));
-                %waitbar(perc/100,h,sprintf('Data written %d%% along...',round(perc)));
-            end
-        end
-        % Writing the data into file
-        nc_varput(newFile,var2Read,meanOut);
-        waitbar(1,h,strcat(monthsName(m),' data saved.'));
-        disp(strcat('Data saved:  ',monthsName(m),' - ',num2str(yearC),' - Days: ',num2str(fPos),' - ',num2str(lPos)));
+        meanOut = cat(1,meanOut,mean(timeDataSet(fPos:lPos,:,:),1));
+        disp(strcat({'Data saved:  '},monthsName(m),{' - '},num2str(yearC),{' - Days: '},num2str(fPos),{' - '},num2str(lPos)));
     end
+    % Writing the data into file
+    nc_varput(newFile,var2Read,meanOut);
     fid = fopen(strcat(char(path_log),'log.txt'), 'at');
     fprintf(fid, '%s\n',char(fileT));
     fclose(fid);
-    %disp(strcat('Archivo guardado: ',char(fileT)));
-    close(h);
 end

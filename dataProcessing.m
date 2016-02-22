@@ -102,10 +102,15 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,path_log)
     try
         timeDataSet = nc_varget(char(fileT),var2Read);
     catch exception
+        out = [];
+        fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+        fclose(fid);
         disp(exception.message);
     end
     lPos = 0;
-    newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
+    %newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
+    newName = strcat(num2str(yearC),'.nc');
     meanOut = [];
     for m=1:1:length(months)
         fPos = lPos + 1;
@@ -165,11 +170,21 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,path_log)
             nc_varput(newFile,'lon',lonDataSet);
         end
         meanOut = cat(1,meanOut,mean(timeDataSet(fPos:lPos,:,:),1));
-        disp(strcat({'Data saved:  '},monthsName(m),{' - '},num2str(yearC),{' - Days: '},num2str(fPos),{' - '},num2str(lPos)));
+        %disp(strcat({'Data saved:  '},monthsName(m),{' - '},num2str(yearC),{' - Days: '},num2str(fPos),{' - '},num2str(lPos)));
     end
-    % Writing the data into file
-    nc_varput(newFile,var2Read,meanOut);
-    fid = fopen(strcat(char(path_log),'log.txt'), 'at');
-    fprintf(fid, '%s\n',char(fileT));
-    fclose(fid);
+    try
+    	clear timeDataSet;
+    	% Writing the data into file
+    	nc_varput(newFile,var2Read,meanOut);
+    	fid = fopen(strcat(char(path_log),'log.txt'), 'at');
+    	fprintf(fid, '%s\n',char(fileT));
+    	fclose(fid);
+    	disp(strcat({'Data saved:  '},num2str(yearC)));
+    catch exception
+        out = [];
+        fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+        fclose(fid);
+        disp(exception.message);
+    end
 end

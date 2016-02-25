@@ -100,10 +100,11 @@ end
 
 function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
     % Catching data from original file
-    latDataSet = ncread(char(fileT),'lat'); 
-    lonDataSet = ncread(char(fileT),'lon');
+    ncid = netcdf.open(char(fileT),'NC_NOWRITE');
+    latDataSet = netcdf.getVar(ncid,0);%ncread(char(fileT),'lat'); 
+    lonDataSet = netcdf.getVar(ncid,1);%ncread(char(fileT),'lon');
     try
-        timeDataSet = ncread(char(fileT),var2Read);
+        timeDataSet = netcdf.getVar(ncid,3);%ncread(char(fileT),var2Read);
     catch exception
         out = [];
         fid = fopen(strcat(char(logPath),'log.txt'), 'at');
@@ -127,7 +128,7 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
                 mkdir(char(path));
             end
             newFile = char(path.concat(newName));
-            nc_create_empty(newFile,'netcdf4-classic');
+            nc_create_empty(newFile,'netcdf4');
 
             % Adding file dimensions
             nc_add_dimension(newFile,'lat',length(latDataSet));

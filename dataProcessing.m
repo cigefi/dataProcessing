@@ -42,19 +42,19 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     if(length(dirName)>1)
         save_path = java.lang.String(dirName(2));
         if(length(dirName)>2)
-            path_log = java.lang.String(dirName(3));
+            logPath = java.lang.String(dirName(3));
         else
-            path_log = java.lang.String(dirName(2));
+            logPath = java.lang.String(dirName(2));
         end
 	else
 		save_path = java.lang.String(dirName(1));
-		path_log = java.lang.String(dirName(1));
+		logPath = java.lang.String(dirName(1));
     end
 	if(save_path.charAt(save_path.length-1) ~= '/')
 		save_path = save_path.concat('/');
 	end
-	if(path_log.charAt(path_log.length-1) ~= '/')
-		path_log = path_log.concat('/');
+	if(logPath.charAt(logPath.length-1) ~= '/')
+		logPath = logPath.concat('/');
 	end
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
@@ -73,7 +73,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                 end
                 if(yearC > 0)
                     % Subrutine to writte the data in new Netcdf file
-                    writeFile(fileT,var2Read,yearC,months,save_path,monthsName,path_log);
+                    writeFile(fileT,var2Read,yearC,months,save_path,monthsName,logPath);
                 end
             catch exception
 	        fid = fopen(strcat(char(logPath),'log.txt'), 'at');
@@ -85,20 +85,20 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
             if isequal(dirData(f).isdir,1)
                   newPath = char(path.concat(dirData(f).name));
                 if nargin < 2 % Validates if the var2Read param is received
-                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(path_log)});
+                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)});
                 elseif nargin < 3 % Validates if the yearZero param is received
-                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(path_log)},var2Read);
+                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)},var2Read);
                 elseif nargin < 4 % Validates if the yearN param is received
-                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(path_log)},var2Read,yearZero)
+                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)},var2Read,yearZero)
                 else
-                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(path_log)},var2Read,yearZero,yearN)
+                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)},var2Read,yearZero,yearN)
                 end
             end
         end
     end
 end
 
-function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,path_log)
+function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
     % Catching data from original file
     latDataSet = ncread(char(fileT),'lat'); 
     lonDataSet = ncread(char(fileT),'lon');
@@ -179,7 +179,7 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,path_log)
     	clear timeDataSet;
     	% Writing the data into file
     	nc_varput(newFile,var2Read,meanOut);
-    	fid = fopen(strcat(char(path_log),'log.txt'), 'at');
+    	fid = fopen(strcat(char(logPath),'log.txt'), 'at');
     	fprintf(fid, '%s\n',char(fileT));
     	fclose(fid);
     	disp(strcat({'Data saved:  '},num2str(yearC)));

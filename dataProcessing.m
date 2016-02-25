@@ -97,10 +97,10 @@ end
 
 function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,path_log)
     % Catching data from original file
-    latDataSet = nc_varget(char(fileT),'lat'); 
-    lonDataSet = nc_varget(char(fileT),'lon');
+    latDataSet = ncread(char(fileT),'lat'); 
+    lonDataSet = ncread(char(fileT),'lon');
     try
-        timeDataSet = nc_varget(char(fileT),var2Read);
+        timeDataSet = ncread(char(fileT),var2Read);
     catch exception
         out = [];
         fid = fopen(strcat(char(logPath),'log.txt'), 'at');

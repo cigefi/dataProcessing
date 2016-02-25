@@ -99,12 +99,31 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
 end
 
 function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
+    latid = 0;
+    latid = 0;
+    var2Readid = 0;	
     % Catching data from original file
     ncid = netcdf.open(char(fileT),'NC_NOWRITE');
-    latDataSet = netcdf.getVar(ncid,0);%ncread(char(fileT),'lat'); 
-    lonDataSet = netcdf.getVar(ncid,1);%ncread(char(fileT),'lon');
+    [ndim,nvar,natt,unlim] = netcdf.inq(ncid);
+    for i=0:1:nvar-1
+    	[varname,xtype,dimid,natt] = netcdf.inqVar(ncid,i);
+    	switch(varname)
+    		case 'latitude'
+	   		latid = i;
+	       	case 'longitude'
+           		lonid = i;
+	       	case 'lat'
+           		latid = i;
+	       	case 'lon'
+           		lonid = i;
+	       	case var2Read
+           		var2Readid = i;
+   	end
+    end
+    latDataSet = netcdf.getVar(ncid,latid);%ncread(char(fileT),'lat'); 
+    lonDataSet = netcdf.getVar(ncid,lonid);%ncread(char(fileT),'lon');
     try
-        timeDataSet = netcdf.getVar(ncid,3);%ncread(char(fileT),var2Read);
+        timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
     catch exception
         out = [];
         fid = fopen(strcat(char(logPath),'log.txt'), 'at');

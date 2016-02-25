@@ -75,8 +75,11 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                     % Subrutine to writte the data in new Netcdf file
                     writeFile(fileT,var2Read,yearC,months,save_path,monthsName,path_log);
                 end
-            catch
-                continue;
+            catch exception
+	        fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+	        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+	        fclose(fid);
+	        disp(exception.message);
             end
         else
             if isequal(dirData(f).isdir,1)

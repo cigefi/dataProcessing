@@ -97,37 +97,37 @@ end
 
 function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
     latid = 0;
-    latid = 0;
+    lonid = 0;
     var2Readid = 0;	
     % Catching data from original file
     ncid = netcdf.open(char(fileT),'NC_NOWRITE');
     [ndim,nvar,natt,unlim] = netcdf.inq(ncid);
     for i=0:1:nvar-1
-    	[varname,xtype,dimid,natt] = netcdf.inqVar(ncid,i);
-    	switch(varname)
-    		case 'latitude'
-	   		latid = i;
+    	[varname,~,~,~] = netcdf.inqVar(ncid,i);
+        switch(varname)
+            case 'latitude'
+                latid = i;
 	       	case 'longitude'
-           		lonid = i;
+                lonid = i;
 	       	case 'lat'
-           		latid = i;
+                latid = i;
 	       	case 'lon'
-           		lonid = i;
+                lonid = i;
 	       	case var2Read
-           		var2Readid = i;
-   	end
+                var2Readid = i;
+        end
     end
     latDataSet = netcdf.getVar(ncid,latid);%ncread(char(fileT),'lat'); 
     lonDataSet = netcdf.getVar(ncid,lonid);%ncread(char(fileT),'lon');
-    try
-        timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
-    catch exception
-        out = [];
-        fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
-        fclose(fid);
-        disp(exception.message);
-    end
+    timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
+%     try
+%         timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
+%     catch exception
+%         fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+%         fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+%         fclose(fid);
+%         disp(exception.message);
+%     end
     lPos = 0;
     %newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
     newName = strcat(num2str(yearC),'.nc');
@@ -201,7 +201,6 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
     	fclose(fid);
     	disp(strcat({'Data saved:  '},num2str(yearC)));
     catch exception
-        out = [];
         fid = fopen(strcat(char(logPath),'log.txt'), 'at');
         fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
         fclose(fid);

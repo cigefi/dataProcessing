@@ -150,6 +150,21 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
                 mkdir(char(path));
             end
             newFile = char(path.concat(newName));
+            tmp = dir(newFile);
+            if tmp.bytes > 5000
+                try
+                    fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+                    fprintf(fid, '[EXIST] %s\n',char(fileT));
+                    fclose(fid);
+                    disp('File already exists');
+                    return;
+                catch exception
+                    fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+                    fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+                    fclose(fid);
+                    disp(exception.message);
+                end
+            end
             nc_create_empty(newFile,'netcdf4');
 
             % Adding file dimensions

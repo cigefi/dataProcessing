@@ -119,15 +119,15 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
     end
     latDataSet = netcdf.getVar(ncid,latid);%ncread(char(fileT),'lat'); 
     lonDataSet = netcdf.getVar(ncid,lonid);%ncread(char(fileT),'lon');
-    timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
-%     try
-%         timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
-%     catch exception
-%         fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-%         fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
-%         fclose(fid);
-%         disp(exception.message);
-%     end
+    %timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
+    try
+        timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
+    catch exception
+        fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+        fclose(fid);
+        disp(exception.message);
+    end
     lPos = 0;
     %newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
     newName = strcat(num2str(yearC),'.nc');

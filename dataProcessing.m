@@ -122,7 +122,13 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
     %timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
     try
         timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
+        netcdf.close(ncid)
     catch exception
+        try
+            netcdf.close(ncid)
+        catch
+            disp('Cannot close the file');
+        end
         fid = fopen(strcat(char(logPath),'log.txt'), 'at');
         fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
         fclose(fid);

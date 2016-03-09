@@ -4,8 +4,8 @@
 %            dataProcessing(dirName,var2Read)
 %            dataProcessing(dirName)
 %
-% dirName = Path of the directory that contents the files and path for the
-% processing files
+% dirName = Path of the directory that contents the files and destiny path for the
+% processing files (cell array)
 % var2Read (Recommended)= Variable to be read (use 'ncdump' to check variable names)
 % yearZero (Optional) = Lower year of the data to be read
 % yearN (Optional) = Higher year of the data to be read
@@ -91,14 +91,14 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         end
                     end
                     % Subrutine to writte the data in new Netcdf file
-                    writeFile(fileT,var2Read,yearC,months,save_path,monthsName,logPath);
+                    writeFile(fileT,var2Read,yearC,months,save_path,logPath);
                 end
             catch 
             	continue;
             end
         else
             if isequal(dirData(f).isdir,1)
-                  newPath = char(path.concat(dirData(f).name));
+                newPath = char(path.concat(dirData(f).name));
                 if nargin < 2 % Validates if the var2Read param is received
                     dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)});
                 elseif nargin < 3 % Validates if the yearZero param is received
@@ -113,29 +113,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     end
 end
 
-function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
-%     latid = 0;
-%     lonid = 0;
-%     var2Readid = 0;	
-      % Catching data from original file
-%     [ndim,nvar,natt,unlim] = netcdf.inq(ncid);
-%     ncid = netcdf.open(char(fileT),'NC_NOWRITE');
-%     for i=0:1:nvar-1
-%     	[varname,~,~,~] = netcdf.inqVar(ncid,i);
-%         switch(varname)
-%             case 'latitude'
-%                 latid = i;
-% 	       	case 'longitude'
-%                 lonid = i;
-% 	       	case 'lat'
-%                 latid = i;
-% 	       	case 'lon'
-%                 lonid = i;
-% 	       	case var2Read
-%                 var2Readid = i;
-%         end
-%     end
-    % latDataSet = netcdf.getVar(ncid,latid);%ncread(char(fileT),'lat'); 
+function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
     [latDataSet,err] = readNC(fileT,'lat');
     if ~isnan(err)
         fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
@@ -143,7 +121,7 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
         fclose(fid);
         return;
     end
-    %lonDataSet = netcdf.getVar(ncid,lonid);%ncread(char(fileT),'lon');
+    
     [lonDataSet,err] = readNC(fileT,'lon');
     if ~isnan(err)
         fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
@@ -151,21 +129,6 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
         fclose(fid);
         return;
     end
-    %timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
-%     try
-%         timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
-%         netcdf.close(ncid)
-%     catch exception
-%         try
-%             netcdf.close(ncid)
-%         catch
-%             disp('Cannot close the file');
-%         end
-%         fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-%         fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
-%         fclose(fid);
-%         disp(exception.message);
-%     end
     [timeDataSet,err] = readNC(fileT,var2Read);
     if ~isnan(err)
         fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
@@ -177,7 +140,7 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
     %newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
     newName = strcat(num2str(yearC),'.nc');
     meanOut = [];
-    for m=1:1:length(months)
+    for m=1:1:12
         fPos = lPos + 1;
         if(leapyear(yearC)&& m ==2 && length(timeDataSet(:,1,1))==366)
             lPos = months(m) + fPos; % Leap year
@@ -204,60 +167,77 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
 %                     disp(exception.message);
 %                 end
 %             end
-            nc_create_empty(newFile,'netcdf4');
+            try
+                % Catching data from original file
+                ncoid = netcdf.open(char(fileT));
+                GLOBALNC = netcdf.getConstant('NC_GLOBAL');
+                
+                % Creating new nc file
+                if exist(newFile,'file')
+                    delete(newFile);
+                end
+                ncid = netcdf.create(newFile,'NETCDF4');%nc_create_empty(newFile,'netcdf4');
 
-            % Adding file dimensions
-            nc_add_dimension(newFile,'lat',length(latDataSet));
-            nc_add_dimension(newFile,'lon',length(lonDataSet));
-            nc_add_dimension(newFile,'time',0); % 0 means UNLIMITED dimension
+                % Adding file dimensions
+                latdimID = netcdf.defDim(ncid,'lat',length(latDataSet));
+                londimID = netcdf.defDim(ncid,'lon',length(lonDataSet));
+                timedimID = netcdf.defDim(ncid,'time',netcdf.getConstant('NC_UNLIMITED'));
 
-            % Global params
-            nc_attput(newFile,nc_global,'parent_experiment',nc_attget(char(fileT),nc_global,'parent_experiment'));
-            nc_attput(newFile,nc_global,'parent_experiment_id',nc_attget(char(fileT),nc_global,'parent_experiment_id'));
-            nc_attput(newFile,nc_global,'parent_experiment_rip',nc_attget(char(fileT),nc_global,'parent_experiment_rip'));
-            nc_attput(newFile,nc_global,'institution',nc_attget(char(fileT),nc_global,'institution'));
-            nc_attput(newFile,nc_global,'realm',nc_attget(char(fileT),nc_global,'realm'));
-            nc_attput(newFile,nc_global,'modeling_realm',nc_attget(char(fileT),nc_global,'modeling_realm'));
-            nc_attput(newFile,nc_global,'version',nc_attget(char(fileT),nc_global,'version'));
-            nc_attput(newFile,nc_global,'downscalingModel',nc_attget(char(fileT),nc_global,'downscalingModel'));
-            nc_attput(newFile,nc_global,'experiment_id',nc_attget(char(fileT),nc_global,'experiment_id'));
-            nc_attput(newFile,nc_global,'frequency','monthly');
-            nc_attput(newFile,nc_global,'Year',num2str(yearC)); % nc_attput(FILE,VARIABLE,TITLE,CONTENT)
-            nc_attput(newFile,nc_global,'data_analysis_institution','CIGEFI - Universidad de Costa Rica');
-            nc_attput(newFile,nc_global,'data_analysis_date',char(datetime('today')));
-            nc_attput(newFile,nc_global,'data_analysis_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
+                % Global params
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment_id',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment_rip',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'institution',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'realm',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'modeling_realm',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'version',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'downscalingModel',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'experiment_id',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment',ncid,GLOBALNC);
+                netcdf.copyAtt(ncoid,GLOBALNC,'parent_experiment',ncid,GLOBALNC);
+                netcdf.putAtt(ncid,GLOBALNC,'frequency','monthly');
+                netcdf.putAtt(ncid,GLOBALNC,'year',num2str(yearC));
+                netcdf.putAtt(ncid,GLOBALNC,'data_analysis_institution','CIGEFI - Universidad de Costa Rica');
+                netcdf.putAtt(ncid,GLOBALNC,'data_analysis_institution',char(datetime('today')));
+                netcdf.putAtt(ncid,GLOBALNC,'data_analysis_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
+                
+                % Adding file variables
+                monthlyvarID = netcdf.defVar(ncid,var2Read,'float',[timedimID,latdimID,londimID]);
+                timevarID = netcdf.defVar(ncid,'time','float',timedimID);
+                latvarID = netcdf.defVar(ncid,'lat','float',latdimID);
+                lonvarID = netcdf.defVar(ncid,'lon','float',londimID);
 
-            % Adding file variables
-            monthlyData.Name = var2Read;
-            monthlyData.Datatype = 'single';
-            monthlyData.Dimension = {'time','lat', 'lon'};
-            nc_addvar(newFile,monthlyData);
-
-            timeData.Name = 'time';
-            timeData.Dimension = {'time'};
-            nc_addvar(newFile,timeData);
-
-            latData.Name = 'lat';
-            latData.Dimension = {'lat'};
-            nc_addvar(newFile,latData);
-
-            lonData.Name = 'lon';
-            lonData.Dimension = {'lon'};
-            nc_addvar(newFile,lonData);
-
-            % Writing the data into file
-            nc_varput(newFile,'lat',latDataSet);
-            nc_varput(newFile,'lon',lonDataSet);
+                netcdf.endDef(ncid);
+                % Writing the data into file
+                netcdf.putVar(ncid,latvarID,latDataSet);
+                netcdf.putVar(ncid,lonvarID,lonDataSet);
+            catch exception
+                disp(exception.message);
+                netcdf.close(ncid);
+                netcdf.close(ncoid);
+                if exist(newFile,'file')
+                    delete(newFile);
+                end
+                fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+                fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+                fclose(fid);
+                return;
+            end
         end
         meanOut = cat(1,meanOut,mean(timeDataSet(fPos:lPos,:,:),1));
-        %disp(strcat({'Data saved:  '},monthsName(m),{' - '},num2str(yearC),{' - Days: '},num2str(fPos),{' - '},num2str(lPos)));
     end
     try
     	clear timeDataSet;
     	% Writing the data into file
-    	nc_varput(newFile,var2Read,meanOut);
+        netcdf.putVar(ncid,monthlyvarID,[0 0 0],[12 length(latDataSet) length(lonDataSet)],meanOut);
+        netcdf.close(ncid);
+        netcdf.close(ncoid);
     	fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-    	fprintf(fid, '%s\n',char(fileT));
+    	fprintf(fid, '[SAVED][%s] %s\n',char(datetime('now')),char(fileT));
     	fclose(fid);
     	disp(strcat({'Data saved:  '},num2str(yearC)));
     catch exception
@@ -289,7 +269,6 @@ function [data,error] = readNC(path,var2Read)
         elseif ~strcmp(var2Read,'lat')
             data = permute(data,[3 2 1]);
         end
-        %data = permute(netcdf.getVar(ncid,var2Readid,'double'),[3 2 1]);
         if isempty(data)
             error = 'Empty dataset';
         end

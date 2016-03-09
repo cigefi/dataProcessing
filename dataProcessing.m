@@ -114,6 +114,22 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
 end
 
 function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
+    newName = strcat(num2str(yearC),'.nc');
+    newFile = char(path.concat(newName));
+    if exist(newFile,'file')
+        try
+            fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+            fprintf(fid, '[EXIST] %s\n',char(fileT));
+            fclose(fid);
+            disp(char(strcat(num2str(yearC),{' '},'file already exists')));
+            return;
+        catch exception
+            fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+            fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+            fclose(fid);
+            disp(exception.message);
+        end
+    end
     [latDataSet,err] = readNC(fileT,'lat');
     if ~isnan(err)
         fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
@@ -138,7 +154,7 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
     end
     lPos = 0;
     %newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
-    newName = strcat(num2str(yearC),'.nc');
+
     meanOut = [];
     for m=1:1:12
         fPos = lPos + 1;
@@ -150,21 +166,6 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
         if(m==1) % New file configuration
             if ~exist(char(path),'dir')
                 mkdir(char(path));
-            end
-            newFile = char(path.concat(newName));
-            if exist(newFile,'file')
-                try
-                    fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-                    fprintf(fid, '[EXIST] %s\n',char(fileT));
-                    fclose(fid);
-                    disp(char(strcat(num2str(yearC),{' '},'file already exists')));
-                    return;
-                catch exception
-                    fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-                    fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
-                    fclose(fid);
-                    disp(exception.message);
-                end
             end
 
             try

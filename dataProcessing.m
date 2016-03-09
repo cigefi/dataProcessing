@@ -11,7 +11,7 @@
 % yearN (Optional) = Higher year of the data to be read
 function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     if nargin < 1
-        error('dataProcessing: dirName is a required input')
+        error('dataProcessing: dirName is a required input');
     else
         dirName = strrep(dirName,'\','/'); % Clean dirName var
     end
@@ -46,18 +46,18 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
         experimentName = '[CIGEFI]'; % Dafault value
     end
     if(length(dirName)>1)
-        save_path = java.lang.String(dirName(2));
+        savePath = java.lang.String(dirName(2));
         if(length(dirName)>2)
             logPath = java.lang.String(dirName(3));
         else
             logPath = java.lang.String(dirName(2));
         end
 	else
-		save_path = java.lang.String(dirName(1));
+		savePath = java.lang.String(dirName(1));
 		logPath = java.lang.String(dirName(1));
     end
-    if(save_path.charAt(save_path.length-1) ~= '/')
-        save_path = save_path.concat('/');
+    if(savePath.charAt(savePath.length-1) ~= '/')
+        savePath = savePath.concat('/');
     end
     if(logPath.charAt(logPath.length-1) ~= '/')
         logPath = logPath.concat('/');
@@ -91,7 +91,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         end
                     end
                     % Subrutine to writte the data in new Netcdf file
-                    writeFile(fileT,var2Read,yearC,months,save_path,logPath);
+                    writeFile(fileT,var2Read,yearC,months,savePath,logPath);
                 end
             catch 
             	continue;
@@ -100,13 +100,13 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
             if isequal(dirData(f).isdir,1)
                 newPath = char(path.concat(dirData(f).name));
                 if nargin < 2 % Validates if the var2Read param is received
-                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)});
+                    dataProcessing({newPath,char(savePath.concat(dirData(f).name)),char(logPath)});
                 elseif nargin < 3 % Validates if the yearZero param is received
-                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)},var2Read);
+                    dataProcessing({newPath,char(savePath.concat(dirData(f).name)),char(logPath)},var2Read);
                 elseif nargin < 4 % Validates if the yearN param is received
-                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)},var2Read,yearZero)
+                    dataProcessing({newPath,char(savePath.concat(dirData(f).name)),char(logPath)},var2Read,yearZero)
                 else
-                    dataProcessing({newPath,char(save_path.concat(dirData(f).name)),char(logPath)},var2Read,yearZero,yearN)
+                    dataProcessing({newPath,char(savePath.concat(dirData(f).name)),char(logPath)},var2Read,yearZero,yearN)
                 end
             end
         end

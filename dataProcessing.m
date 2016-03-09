@@ -39,6 +39,12 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     if(path.charAt(path.length-1) ~= '/')
         path = path.concat('/');
     end
+    try
+        experimentParent = path.substring(0,path.lastIndexOf(strcat('/',var2Read)));
+        experimentName = experimentParent.substring(experimentParent.lastIndexOf('/')+1);
+    catch
+        experimentName = '[CIGEFI]'; % Dafault value
+    end
     if(length(dirName)>1)
         save_path = java.lang.String(dirName(2));
         if(length(dirName)>2)
@@ -55,7 +61,8 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
 	end
 	if(logPath.charAt(logPath.length-1) ~= '/')
 		logPath = logPath.concat('/');
-	end
+    end
+    processing = 0;
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
@@ -64,14 +71,25 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                 if(yearZero>0)
                     if(yearC<yearZero) 
                         continue;
-                     end
+                    end
                 end
                 if(yearN>0)
                     if(yearC>yearN)
                         continue;
                     end
                 end
-                if(yearC > 0)
+                %if(yearC > 0)
+                 if all(yearC > 0 && ~strcmp(var2Read,'tasmax') && ~strcmp(experimentName,'[CIGEFI]'))
+                    if(~processing)
+                        fprintf('Processing: %s\n',char(experimentName));
+                        processing = 1;
+                        if ~exist(char(logPath),'dir')
+                            mkdir(char(logPath));
+                        end
+                        if(exist(strcat(char(logPath),'log.txt'),'file'))
+                            delete(strcat(char(logPath),'log.txt'));
+                        end
+                    end
                     % Subrutine to writte the data in new Netcdf file
                     writeFile(fileT,var2Read,yearC,months,save_path,monthsName,logPath);
                 end
@@ -96,43 +114,64 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
 end
 
 function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
-    latid = 0;
-    lonid = 0;
-    var2Readid = 0;	
-    % Catching data from original file
-    ncid = netcdf.open(char(fileT),'NC_NOWRITE');
-    [ndim,nvar,natt,unlim] = netcdf.inq(ncid);
-    for i=0:1:nvar-1
-    	[varname,~,~,~] = netcdf.inqVar(ncid,i);
-        switch(varname)
-            case 'latitude'
-                latid = i;
-	       	case 'longitude'
-                lonid = i;
-	       	case 'lat'
-                latid = i;
-	       	case 'lon'
-                lonid = i;
-	       	case var2Read
-                var2Readid = i;
-        end
-    end
-    latDataSet = netcdf.getVar(ncid,latid);%ncread(char(fileT),'lat'); 
-    lonDataSet = netcdf.getVar(ncid,lonid);%ncread(char(fileT),'lon');
-    %timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
-    try
-        timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
-        netcdf.close(ncid)
-    catch exception
-        try
-            netcdf.close(ncid)
-        catch
-            disp('Cannot close the file');
-        end
-        fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+%     latid = 0;
+%     lonid = 0;
+%     var2Readid = 0;	
+      % Catching data from original file
+%     [ndim,nvar,natt,unlim] = netcdf.inq(ncid);
+%     ncid = netcdf.open(char(fileT),'NC_NOWRITE');
+%     for i=0:1:nvar-1
+%     	[varname,~,~,~] = netcdf.inqVar(ncid,i);
+%         switch(varname)
+%             case 'latitude'
+%                 latid = i;
+% 	       	case 'longitude'
+%                 lonid = i;
+% 	       	case 'lat'
+%                 latid = i;
+% 	       	case 'lon'
+%                 lonid = i;
+% 	       	case var2Read
+%                 var2Readid = i;
+%         end
+%     end
+    % latDataSet = netcdf.getVar(ncid,latid);%ncread(char(fileT),'lat'); 
+    [latDataSet,err] = readNC(fileT,'lat');
+    if ~isnan(err)
+        fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
+        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(err));
         fclose(fid);
-        disp(exception.message);
+        return;
+    end
+    %lonDataSet = netcdf.getVar(ncid,lonid);%ncread(char(fileT),'lon');
+    [lonDataSet,err] = readNC(fileT,'lon');
+    if ~isnan(err)
+        fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
+        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(err));
+        fclose(fid);
+        return;
+    end
+    %timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
+%     try
+%         timeDataSet = netcdf.getVar(ncid,var2Readid);%ncread(char(fileT),var2Read);
+%         netcdf.close(ncid)
+%     catch exception
+%         try
+%             netcdf.close(ncid)
+%         catch
+%             disp('Cannot close the file');
+%         end
+%         fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+%         fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+%         fclose(fid);
+%         disp(exception.message);
+%     end
+    [timeDataSet,err] = readNC(fileT,var2Read);
+    if ~isnan(err)
+        fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
+        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(err));
+        fclose(fid);
+        return;
     end
     lPos = 0;
     %newName = strcat('[CIGEFI] ',num2str(yearC),'.nc');
@@ -150,21 +189,21 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
                 mkdir(char(path));
             end
             newFile = char(path.concat(newName));
-            tmp = dir(newFile);
-            if tmp.bytes > 5000
-                try
-                    fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-                    fprintf(fid, '[EXIST] %s\n',char(fileT));
-                    fclose(fid);
-                    disp('File already exists');
-                    return;
-                catch exception
-                    fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-                    fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
-                    fclose(fid);
-                    disp(exception.message);
-                end
-            end
+%             tmp = dir(newFile);
+%             if tmp.bytes > 5000
+%                 try
+%                     fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+%                     fprintf(fid, '[EXIST] %s\n',char(fileT));
+%                     fclose(fid);
+%                     disp('File already exists');
+%                     return;
+%                 catch exception
+%                     fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+%                     fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+%                     fclose(fid);
+%                     disp(exception.message);
+%                 end
+%             end
             nc_create_empty(newFile,'netcdf4');
 
             % Adding file dimensions
@@ -226,5 +265,43 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,monthsName,logPath)
         fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
         fclose(fid);
         disp(exception.message);
+    end
+end
+
+function [data,error] = readNC(path,var2Read)
+    var2Readid = 99999;
+	error = NaN;
+    try
+        % Catching data from original file
+        ncid = netcdf.open(char(path));
+        [~,nvar,~,~] = netcdf.inq(ncid);
+        for i=0:1:nvar-1
+            [varname,~,~,~] = netcdf.inqVar(ncid,i);
+            switch(varname)
+                case var2Read
+                    var2Readid = i;
+                    break;
+            end
+        end
+        data = netcdf.getVar(ncid,var2Readid,'double');
+        if strcmp(var2Read,'lon') 
+            data = data';
+        elseif ~strcmp(var2Read,'lat')
+            data = permute(data,[3 2 1]);
+        end
+        %data = permute(netcdf.getVar(ncid,var2Readid,'double'),[3 2 1]);
+        if isempty(data)
+            error = 'Empty dataset';
+        end
+        netcdf.close(ncid)
+    catch exception
+        data = [];
+        try
+            netcdf.close(ncid)
+        catch
+            error = 'I/O ERROR';
+            return;
+        end
+        error = exception.message;
     end
 end

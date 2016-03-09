@@ -152,21 +152,21 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
                 mkdir(char(path));
             end
             newFile = char(path.concat(newName));
-%             tmp = dir(newFile);
-%             if tmp.bytes > 5000
-%                 try
-%                     fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-%                     fprintf(fid, '[EXIST] %s\n',char(fileT));
-%                     fclose(fid);
-%                     disp('File already exists');
-%                     return;
-%                 catch exception
-%                     fid = fopen(strcat(char(logPath),'log.txt'), 'at');
-%                     fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
-%                     fclose(fid);
-%                     disp(exception.message);
-%                 end
-%             end
+            if exist(newFile,'file')
+                try
+                    fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+                    fprintf(fid, '[EXIST] %s\n',char(fileT));
+                    fclose(fid);
+                    disp(char(strcat(num2str(yearC),{' '},'file already exists')));
+                    return;
+                catch exception
+                    fid = fopen(strcat(char(logPath),'log.txt'), 'at');
+                    fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+                    fclose(fid);
+                    disp(exception.message);
+                end
+            end
+
             try
                 % Catching data from original file
                 ncoid = netcdf.open(char(fileT));
@@ -239,7 +239,7 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
     	fid = fopen(strcat(char(logPath),'log.txt'), 'at');
     	fprintf(fid, '[SAVED][%s] %s\n',char(datetime('now')),char(fileT));
     	fclose(fid);
-    	disp(strcat({'Data saved:  '},num2str(yearC)));
+    	disp(char(strcat({'Data saved:  '},num2str(yearC))));
     catch exception
         fid = fopen(strcat(char(logPath),'log.txt'), 'at');
         fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));

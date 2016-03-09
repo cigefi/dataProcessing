@@ -34,7 +34,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     end
     dirData = dir(char(dirName(1)));  % Get the data for the current directory
     months = [31,28,31,30,31,30,31,31,30,31,30,31]; % Reference to the number of days per month
-    monthsName = {'January','February','March','April','May','June','July','August','September','October','November','December'};
+    %monthsName = {'January','February','March','April','May','June','July','August','September','October','November','December'};
     path = java.lang.String(dirName(1));
     if(path.charAt(path.length-1) ~= '/')
         path = path.concat('/');
@@ -56,11 +56,11 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
 		save_path = java.lang.String(dirName(1));
 		logPath = java.lang.String(dirName(1));
     end
-	if(save_path.charAt(save_path.length-1) ~= '/')
-		save_path = save_path.concat('/');
-	end
-	if(logPath.charAt(logPath.length-1) ~= '/')
-		logPath = logPath.concat('/');
+    if(save_path.charAt(save_path.length-1) ~= '/')
+        save_path = save_path.concat('/');
+    end
+    if(logPath.charAt(logPath.length-1) ~= '/')
+        logPath = logPath.concat('/');
     end
     processing = 0;
     for f = 3:length(dirData)
@@ -208,7 +208,7 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
                 
                 % Adding file variables
                 monthlyvarID = netcdf.defVar(ncid,var2Read,'float',[timedimID,latdimID,londimID]);
-                timevarID = netcdf.defVar(ncid,'time','float',timedimID);
+                [~] = netcdf.defVar(ncid,'time','float',timedimID);
                 latvarID = netcdf.defVar(ncid,'lat','float',latdimID);
                 lonvarID = netcdf.defVar(ncid,'lon','float',londimID);
 

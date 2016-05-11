@@ -79,7 +79,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                     end
                 end
                 %if(yearC > 0)
-                 if all(yearC > 0 && ~strcmp(var2Read,'tasmax') && ~strcmp(experimentName,'[CIGEFI]'))
+                 if all(yearC > 0 && ~strcmp(experimentName,'[CIGEFI]'))
                     if(~processing)
                         fprintf('Processing: %s\n',char(experimentName));
                         processing = 1;
@@ -91,12 +91,29 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         end
                     end
                     % Subrutine to writte the data in new Netcdf file
-                    writeFile(fileT,var2Read,yearC,months,savePath,logPath);
+                    [out,newFile] = writeFile(fileT,var2Read,yearC,months,savePath,logPath);
                 end
             catch 
             	continue;
             end
         else
+            if ~isempty(out)
+                try
+                    ncid = netcdf.open(char(newFile));
+                    varID = netcdf.inqVarID(ncid,var2Read);
+                    % Writing the data into file
+                    netcdf.putVar(ncid,varID,[0 0 0],[length(out(:,1,1)) length(out(1,:,1)) length(out(1,1,:))],out);
+                    netcdf.close(ncid);
+                catch exception
+                    if(exist(char(logPath),'dir'))
+                        fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
+                        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+                        fclose(fid);
+                    end
+                    mailError(type,var2Read,char(experimentName),char(exception.message));
+                    continue;
+                end
+            end
             if isequal(dirData(f).isdir,1)
                 newPath = char(path.concat(dirData(f).name));
                 if nargin < 2 % Validates if the var2Read param is received
@@ -113,8 +130,8 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     end
 end
 
-function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
-    newName = strcat(num2str(yearC),'.nc');
+function [meanOut,newFile] = writeFile(fileT,var2Read,yearC,months,path,logPath,experimentName)
+    newName = strcat(experimentName,'.nc');
     newFile = char(path.concat(newName));
     if exist(newFile,'file')
         try
@@ -233,8 +250,8 @@ function [] = writeFile(fileT,var2Read,yearC,months,path,logPath)
     end
     try
     	clear timeDataSet;
-    	% Writing the data into file
-        netcdf.putVar(ncid,monthlyvarID,[0 0 0],[12 length(latDataSet) length(lonDataSet)],meanOut);
+%     	%Writing the data into file
+%         netcdf.putVar(ncid,monthlyvarID,[0 0 0],[12 length(latDataSet) length(lonDataSet)],meanOut);
         netcdf.close(ncid);
         netcdf.close(ncoid);
     	fid = fopen(strcat(char(logPath),'log.txt'), 'at');
@@ -284,4 +301,11 @@ function [data,error] = readNC(path,var2Read)
         end
         error = exception.message;
     end
+end
+
+function [] = mailError(type,var2Read,experimentName,msg)
+    RECIPIENTS = {'villegas.roberto@hotmail.com'};
+    subject = strcat({'[MATLAB][ERROR] '},type,{' - '},var2Read,{' - '},experimentName);
+    msj = strcat({'An exception has been thrown: '},msg);
+    mailsender(RECIPIENTS,subject,msj);
 end

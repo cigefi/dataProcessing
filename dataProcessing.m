@@ -63,6 +63,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
         logPath = logPath.concat('/');
     end
     processing = 0;
+    out = [];
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))

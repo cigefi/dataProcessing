@@ -92,9 +92,10 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         end
                     end
                     % Subrutine to writte the data in new Netcdf file
-                    [out,newFile] = writeFile(fileT,var2Read,yearC,months,savePath,logPath);
+                    [out,newFile] = writeFile(fileT,var2Read,yearC,months,savePath,logPath,char(experimentName));
                 end
-            catch 
+            catch %e
+                %disp(e.message);
             	continue;
             end
         else
@@ -134,6 +135,7 @@ end
 function [meanOut,newFile] = writeFile(fileT,var2Read,yearC,months,path,logPath,experimentName)
     newName = strcat(experimentName,'.nc');
     newFile = char(path.concat(newName));
+    meanOut = [];
     if exist(newFile,'file')
         try
             fid = fopen(strcat(char(logPath),'log.txt'), 'at');

@@ -92,7 +92,12 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         end
                     end
                     % Subrutine to writte the data in new Netcdf file
-                    [out,newFile] = writeFile(fileT,var2Read,yearC,months,savePath,logPath,char(experimentName));
+                    [nr,newFile] = writeFile(fileT,var2Read,yearC,months,savePath,logPath,char(experimentName));
+                    if isempty(out)
+                        out = nr;
+                    else
+                        out = nanmean(cat(1,out,nr),1);
+                    end
                 end
             catch %e
                 %disp(e.message);
@@ -249,7 +254,7 @@ function [meanOut,newFile] = writeFile(fileT,var2Read,yearC,months,path,logPath,
                 return;
             end
         end
-        meanOut = cat(1,meanOut,mean(timeDataSet(fPos:lPos,:,:),1));
+        meanOut = cat(1,meanOut,nanmean(timeDataSet(fPos:lPos,:,:),1));
     end
     try
     	clear timeDataSet;

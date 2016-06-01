@@ -100,7 +100,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         try
                             latDataSet = [-89.8750:0.25:90];
                             lonDataSet = [0.1250:0.25:360];
-                            newName = strcat(char(experimentName),'.nc');
+                            newName = strcat(char(experimentName),'-',var2Read,'.nc');
                             newFile = char(savePath.concat(newName));
                             % Catching data from original file
                             ncoid = netcdf.open(char(fileT));

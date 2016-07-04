@@ -64,10 +64,13 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     processing = 0;
     saved = 0;
     savedT = 0;
+    savedD = 0;
     out = [];
     outT = [];
+    outD = [];
     ncid = NaN;
     ncidT = NaN;
+    ncidD = NaN;
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
@@ -91,7 +94,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                                 tMax = fileT.substring(0,fileT.lastIndexOf(strcat('/','tasmin')));
                                 tMax = tMax.concat('/tasmax_day');
                                 if exist(char(tMax),'dir')
-                                    fprintf('Processing: %s - %s - tasmean\n',char(experimentName),var2Read);
+                                    fprintf('Processing: %s - %s - tasdiff - tasmean\n',char(experimentName),var2Read);
                                 else
                                     fprintf('Processing: %s - %s\n',char(experimentName),var2Read);
                                 end
@@ -119,14 +122,18 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                             try
                                 fileT2 = savePath.substring(0,savePath.lastIndexOf(strcat('/','tasmin')));
                                 savePathT = fileT2.concat('/tasmean_day/');
+                                savePathD = fileT2.concat('/tasdiff_day/');
                             catch
                                 savePathT = savePath;
+                                savePathD = savePath;
                             end
                             %fileT2 = fileT2.concat(fileT.substring(fileT.lastIndexOf('day/')+4));
                             newName = strcat(char(experimentName),'-',var2Read,'.nc');
                             newNameT = strcat(char(experimentName),'-tasmean.nc');
+                            newNameD = strcat(char(experimentName),'-tasdiff.nc');
                             newFile = char(savePath.concat(newName));
                             newFileT = char(savePathT.concat(newNameT));
+                            newFileD = char(savePathD.concat(newNameD));
                             % Catching data from original file
 %                             [ncoid,latvarID,lonvarID] = netcdf.open(char(fileT));
                             ncoid = netcdf.open(char(fileT));
@@ -142,6 +149,13 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                                 [ncidT,latvarIDT,lonvarIDT] = createNC(ncoid,newFileT,latDataSet,lonDataSet,yearC,'tasmean');
                                 netcdf.putVar(ncidT,latvarIDT,latDataSet);
                                 netcdf.putVar(ncidT,lonvarIDT,lonDataSet);
+                                
+                                if ~exist(char(savePathD),'dir')
+                                    mkdir(char(savePathD));
+                                end
+                                [ncidD,latvarIDD,lonvarIDD] = createNC(ncoid,newFileD,latDataSet,lonDataSet,yearC,'tasdiff');
+                                netcdf.putVar(ncidD,latvarIDD,latDataSet);
+                                netcdf.putVar(ncidD,lonvarIDD,lonDataSet);
                             end
                             netcdf.close(ncoid);
                         catch exception
@@ -158,7 +172,7 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         end
                     end
                     % Subrutine to writte the data in new Netcdf file
-                    [nR,nT] = writeFile(fileT,var2Read,yearC,months,logPath);
+                    [nR,nT,nD] = writeFile(fileT,var2Read,yearC,months,logPath);
                     if isempty(out)
                         out = nR;
                     else
@@ -168,6 +182,11 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                         outT = nT;
                     else
                         outT = cat(1,outT,nT);
+                    end
+                    if isempty(outD)
+                        outD = nD;
+                    else
+                        outD = cat(1,outD,nD);
                     end
                     
                     if f == length(dirData)
@@ -202,6 +221,23 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                                     fclose(fid);
                                 end
                                 mailError(type,'tasmean',char(experimentName),char(exception.message));
+                                continue;
+                            end
+                        end
+                        if ~isempty(outD)
+                            try
+                                varID = netcdf.inqVarID(ncidT,'tasdiff');
+                                % Writing the data into file
+                                netcdf.putVar(ncidD,varID,[0 0 0],[length(outD(:,1,1)),length(outD(1,:,1)),length(outD(1,1,:))],outD);
+                                netcdf.close(ncidD);
+                                savedD = 1;
+                            catch exception
+                                if(exist(char(logPath),'dir'))
+                                    fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
+                                    fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+                                    fclose(fid);
+                                end
+                                mailError(type,'tasdiff',char(experimentName),char(exception.message));
                                 continue;
                             end
                         end
@@ -243,6 +279,22 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
                     continue;
                 end
             end
+            if ~isempty(outD) && ~savedD
+                try
+                    varID = netcdf.inqVarID(ncidD,'tasdiff');
+                    % Writing the data into file
+                    netcdf.putVar(ncidD,varID,[0 0 0],[length(outD(:,1,1)),length(outD(1,:,1)),length(outD(1,1,:))],outD);
+                    netcdf.close(ncidD);
+                catch exception
+                    if(exist(char(logPath),'dir'))
+                        fid = fopen(strcat(char(logPath),'log.txt'), 'at+');
+                        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+                        fclose(fid);
+                    end
+                    mailError(type,'tasdiff',char(experimentName),char(exception.message));
+                    continue;
+                end
+            end
             if isequal(dirData(f).isdir,1)
                 newPath = char(path.concat(dirData(f).name));
                 if nargin < 2 % Validates if the var2Read param is received
@@ -259,9 +311,10 @@ function [] = dataProcessing(dirName,var2Read,yearZero,yearN)
     end
 end
 
-function [meanOut,mTmp] = writeFile(fileT,var2Read,yearC,months,logPath)
+function [meanOut,mTmp,mDiff] = writeFile(fileT,var2Read,yearC,months,logPath)
     meanOut = [];
     mTmp = [];
+    mDiff = [];
     if strcmp(var2Read,'tasmin')
         fileT2 = fileT.substring(0,fileT.lastIndexOf(strcat('/','tasmin')));
         fileT2 = fileT2.concat('/tasmax_day/');
@@ -283,6 +336,7 @@ function [meanOut,mTmp] = writeFile(fileT,var2Read,yearC,months,logPath)
                 return;
             end
             timeDataSet = (mind+maxd)/2;
+            timeDataSet2 = maxd-mind;
             lPos = 0;
             for m=1:1:12
                 fPos = lPos + 1;
@@ -292,6 +346,7 @@ function [meanOut,mTmp] = writeFile(fileT,var2Read,yearC,months,logPath)
                     lPos = months(m) + fPos - 1;
                 end
                 mTmp = cat(1,mTmp,nanmean(timeDataSet(fPos:lPos,:,:),1));
+                mDiff = cat(1,mDiff,nanmean(timeDataSet2(fPos:lPos,:,:),1));
             end
         end
         timeDataSet = mind;
